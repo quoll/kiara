@@ -19,8 +19,8 @@ SPARQL querying.
 For the moment, there is a test stub to run the schema inferencer and print.
 This can be run with:
 
-  $ lein uberjar
-  $ java -jar target/kiara-0.1.0-SNAPSHOT-standalone.jar data.ttl
+    $ lein uberjar
+    $ java -jar target/kiara-0.1.0-SNAPSHOT-standalone.jar data.ttl
 
 ## License
 
