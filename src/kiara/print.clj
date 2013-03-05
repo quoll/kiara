@@ -1,5 +1,5 @@
 (ns kiara.print
-  (:require [kiara.core :as k]
+  (:require [kiara.schema :as schema]
             [clojure.java.io :as io])
   (:gen-class))
 
@@ -10,4 +10,4 @@
     (println "Usage: kiara.print <ttl.file>")
     (System/exit 1))
   (with-open [f (io/input-stream (first args))]
-    (prn (k/datomic-schema f))))
+    (prn (schema/datomic-schema f))))
