@@ -1,5 +1,6 @@
 (ns kiara.core-schema
   "Contains core schema for storing RDF in Datomic"
+  (:require [datomic.api :refer [q] :as d])
   (:import [java.util Date UUID]
            [java.net URI]
            [java.math BigDecimal BigInteger]
@@ -21,12 +22,13 @@
 
 (defn- type-attr-struct
   "Converts a type/name pair into a declaration for an attribute."
+  [[t p]]
   (let [attr {:db/id (Peer/tempid :db.part/db)
               :db/ident p
               :db/valueType t
               :db/cardinality :db.cardinality/one
               :db.install/_attribute :db.part/db}]
-    (if (= t :db.type/string) (assoc decl :db/fulltext true) decl)))
+    (if (= t :db.type/string) (assoc attr :db/fulltext true) attr)))
 
 (def ^:private internal-attributes
   "Attributes used internally by Kiara"
@@ -98,7 +100,7 @@
     :db.install/_attribute :db.part/db}])
 
 (def core-attributes "Declarations of all the attributes used by Kiara"
-  (concat (type-attr-struct type-attributes) internal-attributes))
+  (concat (map type-attr-struct type-attributes) internal-attributes))
 
 (defn filter-schema-tx
   "Filters a transaction that defines attributes to only include attributes not already in a database."
