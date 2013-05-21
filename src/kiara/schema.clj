@@ -95,14 +95,12 @@
 (defn add-predicate
   "Tests if a predicate is described. If not, then create a description and map the predicate to the description.
    If a description already exists, then check if the description needs updating, and modify it accordingly."
-  [descriptions triple]
-  (let [predicate (.getPredicate triple)
-        object (.getObject triple)]
-    (if-let [desc (descriptions predicate)]
-      (if-not (domain-matches desc (.getObject triple))
-        (assoc descriptions predicate (describe predicate object desc))
-        descriptions)
-      (assoc descriptions predicate (describe predicate object)))))
+  [descriptions [_ predicate object]]
+  (if-let [desc (descriptions predicate)]
+    (if-not (domain-matches desc object)
+      (assoc descriptions predicate (describe predicate object desc))
+      descriptions)
+    (assoc descriptions predicate (describe predicate object))))
 
 (defn datomic-schema [i]
   (let [parser (p/create-parser i)
