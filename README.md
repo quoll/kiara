@@ -5,11 +5,15 @@ Kiara Is A Recursive Acronym
 A Clojure library to load RDF data into Datomic.
 
 This is still a work in progress. For the moment it reads RDF/Turtle files
-and determines a schema that should accept the data.
+and determines a schema that should accept the data. Uses CRG-Turtle to
+load the RDF.
 
-Very soon the core schema will be available (in particular, how to store Literals
-that don't conform to standard Clojure types), along with code to insert the RDF
-into the schema that has been built.
+Kiara now defines the schema, and writes mostly conforming data structures.
+Multi-type predicates are correctly handled in the schema, but not yet done
+in the data structures. At the moment, the only use of this is in the test
+printing stub. Once full typing is handled then it can be integrated with
+code that calls datomic. This code should also introduce a database for
+holding database meta-data (namespace prefixes, etc).
 
 The next steps will be to export RDF from Datomic, and then to start supporting
 SPARQL querying.
