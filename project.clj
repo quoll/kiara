@@ -3,7 +3,7 @@
   :url "http://github.com/quoll"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.0"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojars.quoll/turtle "0.1.2"]
                  [com.datomic/datomic-free "0.8.3826"]]
-  :main kiara.print)
+  :main kiara.test-load)

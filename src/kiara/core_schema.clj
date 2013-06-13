@@ -33,14 +33,6 @@
 (def ^:private internal-attributes
   "Attributes used internally by Kiara"
   [{:db/id (Peer/tempid :db.part/db)
-    :db/ident :k/id
-    :db/valueType :db.type/keyword
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/index true
-    :db/doc "QName/keyword value for subjects. Preferred over URIs when possible."
-    :db.install/_attribute :db.part/db}
-   {:db/id (Peer/tempid :db.part/db)
     :db/ident :k/uid
     :db/valueType :db.type/uri
     :db/cardinality :db.cardinality/one
