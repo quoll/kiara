@@ -1,6 +1,7 @@
 (ns kiara.core-schema
   "Contains core schema for storing RDF in Datomic"
-  (:require [datomic.api :refer [q] :as d])
+  (:require [datomic.api :refer [q] :as d]
+            [datomic.function :as dfn])
   (:import [java.util Date UUID]
            [java.net URI]
            [java.math BigDecimal BigInteger]
@@ -33,29 +34,6 @@
 (def ^:private internal-attributes
   "Attributes used internally by Kiara"
   [{:db/id (Peer/tempid :db.part/db)
-    :db/ident :k/uid
-    :db/valueType :db.type/uri
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/index true
-    :db/doc "URI value for subjects. If the URI can be expressed as a QName then use :/id instead."
-    :db.install/_attribute :db.part/db}
-   {:db/id (Peer/tempid :db.part/db)
-    :db/ident :k/prefix
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/index true
-    :db/doc "Prefix that identifies a namespace."
-    :db.install/_attribute :db.part/db}
-   {:db/id (Peer/tempid :db.part/db)
-    :db/ident :k/namespace
-    :db/valueType :db.type/uri
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/doc "Namespace associated with a prefix."
-    :db.install/_attribute :db.part/db}
-   {:db/id (Peer/tempid :db.part/db)
     :db/ident :k/lang
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
@@ -75,6 +53,24 @@
     :db/cardinality :db.cardinality/one
     :db/index true
     :db/doc "Datatype for a literal as a full URI. Prefer :k/datatype where possible."
+    :db.install/_attribute :db.part/db}])
+
+(def system-attributes
+  "Attributes used in the system graph"
+  [{:db/id (Peer/tempid :db.part/db)
+    :db/ident :k/prefix
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/unique :db.unique/identity
+    :db/index true
+    :db/doc "Prefix that identifies a namespace."
+    :db.install/_attribute :db.part/db}
+   {:db/id (Peer/tempid :db.part/db)
+    :db/ident :k/namespace
+    :db/valueType :db.type/uri
+    :db/cardinality :db.cardinality/one
+    :db/unique :db.unique/identity
+    :db/doc "Namespace associated with a prefix."
     :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :db.part/db)
     :db/ident :k/name
@@ -89,10 +85,20 @@
     :db/cardinality :db.cardinality/one
     :db/index true
     :db/doc "Database name for holding a graph"
-    :db.install/_attribute :db.part/db}])
+    :db.install/_attribute :db.part/db}
+   {:db/id (Peer/tempid :k/system)
+    :db/ident :atomic-check
+    :db/fn (dfn/construct {:lang "clojure"
+                           :params '[db tx-id]
+                           :code "(let [i (datomic.api/t->tx (datomic.api/basis-t db))] (if (= tx-id i) [] (throw (ex-info \"Transaction slip. Try again.\", {:expected tx-id :received i :retry true}))))"})}])
 
 (def core-attributes "Declarations of all the attributes used by Kiara"
   (concat (map type-attr-struct type-attributes) internal-attributes))
+
+(def system-partition "A partition for Kiara system attributes"
+  [{:db/id (Peer/tempid :db.part/db)
+    :db/ident :k/system
+    :db.install/_partition :db.part/db}])
 
 (defn filter-schema-tx
   "Filters a transaction that defines attributes to only include attributes not already in a database."

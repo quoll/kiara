@@ -89,8 +89,8 @@
   A database is required to read the schema.
   Returns the data stream and the parser. The parser is needed, since it will not
   contain the prefix map until the data stream has been processed."
-  [database i]
-  (let [parser (p/create-parser i)
+  [database i known-ns gen-fn]
+  (let [parser (p/create-parser i known-ns gen-fn)
         triples (p/get-triples parser)
         add-entity (fn [[s m] triple]
                      (let [[entities new-map] (triple-to-entity database m triple)]
