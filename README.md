@@ -8,20 +8,34 @@ This is still a work in progress. For the moment it reads RDF/Turtle files
 and determines a schema that should accept the data. Uses CRG-Turtle to
 load the RDF.
 
-Kiara now defines the schema, and writes mostly conforming data structures.
-Multi-type predicates are correctly handled in the schema, but not yet done
-in the data structures. At the moment, the only use of this is in the test
-printing stub. Once full typing is handled then it can be integrated with
-code that calls datomic. This code should also introduce a database for
-holding database meta-data (namespace prefixes, etc).
+Lots of breaking changes, but new features. Not building right now, but this
+is changing quickly.
 
-The next steps will be to export RDF from Datomic, and then to start supporting
-SPARQL querying.
+Now defines a system graph, which records the known graphs in the system,
+the name of the default graph, and all the known prefix/namespace-reference pairs.
+
+While prefix/namespace-reference pairs should be stored on a graph-by-graph
+basis (strictly speaking, on a per-load basis), this is generally unnecessary
+in practice.
+
+Also moving to storing *all* IRIs as QNames (keywords internally). This is for
+efficiency, and works much more elegantly with Clojure. When a prefix cannot be
+determined for a namespace, a new one is generated. These prefixes are unique
+across the system.
+
+Cleanup will get back to Kiara defining the schema correctly, and we are about
+to load the data into Datomic. Once this is running correctly, we can look to
+export RDF as well.
+
+Despite my best intentions, RDF/XML support will be required. The goal is to
+support this natively, *without* resorting to Jena's parser.
 
 ## Usage
 
-For the moment, there is a test stub to run the schema inferencer and print.
-This can be run with:
+Not running right now...
+
+There is a test stub to run the schema inferencer and print.
+When working, this can be run with:
 
     $ lein uberjar
     $ java -jar target/kiara-0.1.0-SNAPSHOT-standalone.jar data.ttl
