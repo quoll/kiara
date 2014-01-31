@@ -86,6 +86,13 @@
     :db/index true
     :db/doc "Database name for holding a graph"
     :db.install/_attribute :db.part/db}
+   {:db/id (Peer/tempid :db.part/db)
+    :db/ident :k/default
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/one
+    :db/index true
+    :db/doc "Refers to the structure for the default database"
+    :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :k/system)
     :db/ident :atomic-check
     :db/fn (dfn/construct {:lang "clojure"
