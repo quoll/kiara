@@ -12,13 +12,18 @@
   (:import [datomic Peer]
            [datomic.db Db]
            [datomic.peer Connection]
-           [java.net URI]))
+           [java.net URI URL]))
+
+(def DatomicUrlString
+  (s/both String (s/pred #(= "datomic" (.getScheme (URI. %))) 'durl?)))
+
+(def UriString (s/both String (s/pred #(instance? URI (URI. %)) 'uri?)))
 
 (def Kiara
   {:system Connection
-   :system-db String
+   :system-db DatomicUrlString
    :default Connection
-   :default-db String})
+   :default-db DatomicUrlString})
 
 (def kiara-ns "http://raw.github.com/quoll/kiara/master/ns#")
 
@@ -27,9 +32,9 @@
   [connection :- Connection]
   (d/db connection))
 
-(s/defn update-dbname :- String
-  "Updates the dbname in a Datomic database URI."
-  [uri :- String, dbname :- String]
+(s/defn update-dbname :- DatomicUrlString
+  "Updates the dbname in a Datomic database URL."
+  [uri :- DatomicUrlString, dbname :- String]
   (condp re-matches uri
     #"datomic:ddb://([^/]*)/([^/]*)/([^?]*)(\\?.*)?" :>>
       (fn [[_ region table _ query]] (str "datomic:ddb://" region "/" table "/" dbname query))
@@ -60,7 +65,7 @@
   "Get a new namespace prefix to use for a reference. If one does not exist, then generate a new one,
   and optimistically attempt to use it. The database function :atomic-check is used to check that the
   system table was not updated between scan and insertion."
-  [sys :- Connection, p-ref :- String]
+  [sys :- Connection, p-ref :- UriString]
   (let [sysdb (rdb sys)
         known-prefix (ffirst (q '[:find ?p :in $ ?pref :where [?n :k/prefix ?p][?n :k/namespace ?pref]] sysdb p-ref))]
     (or known-prefix
@@ -77,23 +82,24 @@
               (let [new-sysdb (rdb sys)]
                 (recur new-sysdb (inc (biggest-ns-id new-sysdb))))))))))
 
-(s/defn known-prefixes :- {String String}
+(s/defn known-prefixes :- {String UriString}
   "Returns a map of known prefixes to namespace references."
   [sys :- Connection]
   (let [p (q '[:find ?p ?l :where [?n :k/prefix ?p] [?n :k/namespace ?l]] (rdb sys))]
     (reduce conj {} (map (fn [[p n]] [p (str n)]) p))))
 
-(s/defn generate-graph-uri :- String
+(s/defn generate-graph-uri :- DatomicUrlString
   "Creates a new graph URI, based on the system graph and a graph name"
-  [{sys :system, sysdb :system-db} :- Kiara, gn :- String]
+  [{sys :system, sysdb :system-db} :- Kiara, gn :- UriString]
   (let [[p-ref local] (qname/split-iri gn)
         prefix (get-prefix sys p-ref)
         db-name (str prefix "-" local)]
     (update-dbname sysdb db-name)))
 
-(s/defn get-default :- String
-  "Gets the default graph given the system graph, or a name. Only uses the name if the system graph has not yet been established."
-  [system :- Connection, dn :- String]
+(s/defn get-default :- DatomicUrlString
+  "Gets the default graph given the system graph, or a default reference.
+   Only uses the default if the system graph has not yet been established."
+  [system :- Connection, dn :- DatomicUrlString]
   (let [sysdb (rdb system)
         est (try (str (ffirst (q '[:find ?dn :where [?dg :k/db-name ?dn][?sys :k/default ?dg]] sysdb)))
                  (catch Exception _))
@@ -103,7 +109,7 @@
 
 (s/defn get-graph :- Connection
   "Gets a graph connection from a Kiara instance, creating a new one where necessary."
-  [k :- Kiara, gn :- String]
+  [k :- Kiara, gn :- UriString]
   (let [sys (:system k)
         sysdb (rdb sys)
         established (ffirst (q '[:find ?dn :in $ ?gn :where [?g :k/db-name ?dn][?g :k/name ?gn]] sysdb gn))
@@ -121,7 +127,10 @@
 (s/defn ^{:private true}
   initial-system :- [{s/Keyword s/Any}]
   "Creates the initial data for the system graph"
-  [sys-db :- String, sys-name :- String, default-db :- String, default-name :- String]
+  [sys-db :- DatomicUrlString
+   sys-name :- UriString
+   default-db :- DatomicUrlString
+   default-name :- UriString]
   [{:db/id (Peer/tempid :k/system)
     :k/name (URI. sys-name)
     :k/db-name (URI. sys-db)
@@ -134,14 +143,14 @@
 
 (s/defn gname :- String
   "Gets the end of the path from a URL"
-  [url :- String]
+  [url :- DatomicUrlString]
   (last (str/split url #"/")))
 
 (s/defn init :- Kiara
-  "Creates a database and nitializes it. Receives a connection parameter"
-  ([sys-db :- String]
+  "Creates a database and initializes it. Receives a connection parameter"
+  ([sys-db :- DatomicUrlString]
      (init sys-db (update-dbname sys-db default-default-name)))
-  ([sys-db :- String, default-db :- String]
+  ([sys-db :- DatomicUrlString, default-db :- DatomicUrlString]
      (let [sys-name (gname sys-db)
            default-name (gname default-db)
            created (d/create-database sys-db)
@@ -170,7 +179,8 @@
   "Set up a set of connections to databases that contain RDF graphs, starting with the system graph"
   ([] (create default-protocol default-host default-port default-system))
   ([root :- String] (create root default-system))
-  ([root :- String, system :- String] (init (str root (if-not (= \/ (last root)) "/") system)))
+  ([root :- DatomicUrlString, system :- String]
+     (init (str root (if-not (= \/ (last root)) "/") system)))
   ([protocol :- String, host :- String, port :- long, system :- String]
      (init (str protocol "://" host (if port (str ":" port)) "/" system))))
 
