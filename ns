@@ -1,0 +1,58 @@
+@prefix kiara: <http://github.com/quoll/kiara/> .
+@prefix k: <http://github.com/quoll/kiara/ns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+k:Graph a rdfs:Class ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Graph" ;
+  rdfs:comment "A Kiara graph" .
+
+k:name a rdf:Property ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Graph name" ;
+  rdfs:comment "The URI identifying a graph" ;
+  rdfs:range k:Graph ;
+  rdfs:domain xsd:string .
+
+k:db-name a rdf:Property ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Database URL" ;
+  rdfs:comment "The URL for storing a graph database" ;
+  rdfs:range k:Graph ;
+  rdfs:domain xsd:string .
+
+k:default a rdf:Property ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Default Graph" ;
+  rdfs:comment "The default graph. Only used by the system graph." ;
+  rdfs:range k:Graph ;
+  rdfs:domain k:Graph .
+
+k:NamespaceDesc a rdfs:Class ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Namespace Description" ;
+  rdfs:comment "A prefix/namespace pair" .
+
+k:namespaces a rdf:Property ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Namespaces" ;
+  rdfs:comment "The namespaces associated with a graph" ;
+  rdfs:range k:Graph ;
+  rdfs:domain k:NamespaceDesc .
+
+k:prefix a rdf:Property ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Prefix" ;
+  rdfs:comment "The prefix used to refer to a namespace" ;
+  rdfs:range k:NamespaceDesc ;
+  rdfs:domain xsd:string .
+
+k:namespace a rdf:Property ;
+  rdfs:isDefinedBy kiara:ns ;
+  rdfs:label "Namespace" ;
+  rdfs:comment "The namespace associated with a prefix" ;
+  rdfs:range k:NamespaceDesc ;
+  rdfs:domain xsd:string .
+
