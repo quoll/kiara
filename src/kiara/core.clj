@@ -20,7 +20,7 @@
    :default Connection
    :default-db String})
 
-(def kiara-ns "http://github.com/quoll/kiara/ns#")
+(def kiara-ns "http://raw.github.com/quoll/kiara/master/ns#")
 
 (s/defn rdb :- Db
   "Gets the current db value on a connection. This may be expanded for reliability."
