@@ -73,6 +73,12 @@
     :db/doc "Namespace associated with a prefix."
     :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :db.part/db)
+    :db/ident :k/namespaces
+    :db/valueType :db.type/ref
+    :db/cardinality :db.cardinality/one
+    :db/doc "Refers to the namespaces for a graph."
+    :db.install/_attribute :db.part/db}
+   {:db/id (Peer/tempid :db.part/db)
     :db/ident :k/name
     :db/valueType :db.type/uri
     :db/cardinality :db.cardinality/one

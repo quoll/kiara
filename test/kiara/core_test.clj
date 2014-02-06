@@ -1,7 +1,10 @@
 (ns kiara.core-test
-  (:require [kiara.util :as ku])
+  (:require [kiara.util :as ku]
+            [schema.test])
   (:use clojure.test
         kiara.core))
+
+(use-fixtures :once schema.test/validate-schemas)
 
 (deftest init-test
   (testing "Initialize the system. No testing, just avoid exceptions"
