@@ -53,6 +53,13 @@
     :db/cardinality :db.cardinality/one
     :db/index true
     :db/doc "Datatype for a literal as a full URI. Prefer :k/datatype where possible."
+    :db.install/_attribute :db.part/db}
+   {:db/id (Peer/tempid :db.part/db)
+    :db/ident :k/rdf
+    :db/valueType :db.type/boolean
+    :db/cardinality :db.cardinality/one
+    :db/index true
+    :db/doc "Indicates that a property is used for RDF data."
     :db.install/_attribute :db.part/db}])
 
 (def system-attributes
@@ -79,11 +86,11 @@
     :db/doc "Refers to the namespaces for a graph."
     :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :db.part/db)
-    :db/ident :k/name
+    :db/ident :sd/name
     :db/valueType :db.type/uri
     :db/cardinality :db.cardinality/one
     :db/index true
-    :db/doc "Graph name associated with a database"
+    :db/doc "Graph name associated with a database/graph. See http://www.w3.org/ns/sparql-service-description#name"
     :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :db.part/db)
     :db/ident :k/db-name
@@ -98,6 +105,13 @@
     :db/cardinality :db.cardinality/one
     :db/index true
     :db/doc "Refers to the structure for the default database"
+    :db.install/_attribute :db.part/db}
+   {:db/id (Peer/tempid :db.part/db)
+    :db/ident :rdf/type
+    :db/valueType :db.type/keyword
+    :db/cardinality :db.cardinality/many
+    :db/index true
+    :db/doc "Describes the type of an entity"
     :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :k/system)
     :db/ident :atomic-check

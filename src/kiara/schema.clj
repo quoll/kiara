@@ -81,6 +81,7 @@
     :db/ident predicate
     :db/valueType (type-for value)
     :db/cardinality :db.cardinality/many
+    :k/rdf true
     :db.install/_attribute :db.part/db})
   ([predicate value existing-desc]
    (update-in existing-desc [:db/valueType] type-for value)))
