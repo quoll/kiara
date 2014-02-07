@@ -1,0 +1,30 @@
+(ns kiara.namespaces
+  "Common RDF namespaces"
+  (:require [kiara.types :only [UriString]]))
+
+(def common-namespaces
+  {"air" "http://www.daml.org/2001/10/html/airport-ont#"
+   "bibo" "http://purl.org/ontology/bibo/"
+   "bio" "http://purl.org/vocab/bio/0.1/"
+   "cc" "http://creativecommons.org/ns#"
+   "doap" "http://usefulinc.com/ns/doap#"
+   "dc" "http://purl.org/dc/elements/1.1/"
+   "dct" "http://purl.org/dc/terms/"
+   "dcterms" "http://purl.org/dc/terms/"
+   "foaf" "http://xmlns.com/foaf/0.1/"
+   "pos" "http://www.w3.org/2003/01/geo/wgs84_pos#"
+   "geo" "http://www.w3.org/2003/01/geo/wgs84_pos#"
+   "gn" "http://www.geonames.org/ontology#"
+   "gr" "http://purl.org/goodrelations/v1#"
+   "ore" "http://www.openarchives.org/ore/terms/"
+   "rdf" "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   "rdfs" "http://www.w3.org/2000/01/rdf-schema#"
+   "sd" "http://www.w3.org/ns/sparql-service-description#"
+   "sioc" "http://rdfs.org/sioc/ns#"
+   "skos" "http://www.w3.org/2004/02/skos/core#"
+   "vcard" "http://www.w3.org/2006/vcard/ns#"
+   "void" "http://rdfs.org/ns/void#"
+   "owl" "http://www.w3.org/2002/07/owl#"
+   "wn" "http://xmlns.com/wordnet/1.6/"
+   "xmls" "http://www.w3.org/2001/XMLSchema#"
+   "xsd" "http://www.w3.org/2001/XMLSchema#"})
