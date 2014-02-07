@@ -9,21 +9,11 @@
             [clojure.string :as str]
             [datomic.api :refer [q] :as d]
             [schema.core :as s])
+  (:use [kiara.types :only [Kiara DatomicUrlString UriString]])
   (:import [datomic Peer]
            [datomic.db Db]
            [datomic.peer Connection]
-           [java.net URI URL]))
-
-(def DatomicUrlString
-  (s/both String (s/pred #(= "datomic" (.getScheme (URI. %))) 'durl?)))
-
-(def UriString (s/both String (s/pred #(instance? URI (URI. %)) 'uri?)))
-
-(def Kiara
-  {:system Connection
-   :system-db DatomicUrlString
-   :default Connection
-   :default-db DatomicUrlString})
+           [java.net URI]))
 
 (def kiara-ns "http://raw.github.com/quoll/kiara/master/ns#")
 
@@ -132,11 +122,13 @@
    default-db :- DatomicUrlString
    default-name :- UriString]
   [{:db/id (Peer/tempid :k/system)
-    :k/name (URI. sys-name)
+    :rdf/type :sd/NamedGraph
+    :sd/name (URI. sys-name)
     :k/db-name (URI. sys-db)
     :k/namespaces [{:k/prefix "k" :k/namespace (URI. kiara-ns)}]
     :k/default {:db/id (Peer/tempid :k/system)
-                :k/name (URI. default-name)
+                :rdf/type :sd/NamedGraph
+                :sd/name (URI. default-name)
                 :k/db-name (URI. default-db)}}])
 
 (def default-default-name "default")
