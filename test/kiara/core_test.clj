@@ -19,9 +19,31 @@
 "@prefix : <http://example.org#> .
 :a :b 1.0 .")
 
-(deftest load-test
+(deftest load-default
   (testing "Load a simple graph"
     (let [k (create)
           k (load-schema k (ku/stream simple-data))
-          k (load-ttl k (ku/stream simple-data))]
-      )))
+          k (load-ttl k (ku/stream simple-data))
+          t (get-triples k)]
+      (is (= 1 (count t)))
+      (is (= [:a :b 1.0] (first t))))))
+
+(deftest load-graph
+  (testing "Load a named graph"
+    (let [k (create)
+          k (load-schema k (ku/stream simple-data) "my:graph")
+          k (load-ttl k (ku/stream simple-data) "my:graph")
+          t (get-triples k "my:graph")]
+      (is (= 1 (count t)))
+      (is (= [:a :b 1.0] (first t))))))
+
+(deftest multi-load
+  (testing "Load a named graph more than once"
+    (let [k (create)
+          tf (fn [] (let [k (load-schema k (ku/stream simple-data) "my:graph")
+                         k (load-ttl k (ku/stream simple-data) "my:graph")
+                         t (get-triples k "my:graph")]
+                     (is (= 1 (count t)))
+                     (is (= [:a :b 1.0] (first t)))))]
+      (tf)
+      (tf))))

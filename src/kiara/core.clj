@@ -8,8 +8,9 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [datomic.api :refer [q] :as d]
+            [kiara.types :refer [Kiara DatomicUrlString UriString PartialUriString
+                                 UriString? Triple] :as t]
             [schema.core :as s])
-  (:use [kiara.types :only [Kiara DatomicUrlString UriString]])
   (:import [datomic Peer]
            [datomic.db Db]
            [datomic.peer Connection]
@@ -55,9 +56,14 @@
   "Get a new namespace prefix to use for a reference. If one does not exist, then generate a new one,
   and optimistically attempt to use it. The database function :atomic-check is used to check that the
   system table was not updated between scan and insertion."
-  [sys :- Connection, p-ref :- UriString]
+  [sys :- Connection, ns-ref :- PartialUriString]
   (let [sysdb (rdb sys)
-        known-prefix (ffirst (q '[:find ?p :in $ ?pref :where [?n :k/prefix ?p][?n :k/namespace ?pref]] sysdb p-ref))]
+        known-prefix (if (t/prefix-style? ns-ref)
+                       (subs ns-ref 0 (dec (count ns-ref)))
+                       (ffirst (q '[:find ?p
+                                    :in $ ?pref
+                                    :where [?n :k/prefix ?p][?n :k/namespace ?pref]]
+                                  sysdb (URI. ns-ref))))]
     (or known-prefix
         (loop [sdb sysdb, new-ns-id (inc (biggest-ns-id sysdb))]
           (let [new-ns (str "ns" new-ns-id)
@@ -65,7 +71,7 @@
                 [result error] (try [@(d/transact sys [[:atomic-check latest]
                                                        {:db/id (Peer/tempid :k/system)
                                                         :k/prefix new-ns
-                                                        :k/namespace p-ref}]) nil]
+                                                        :k/namespace (URI. ns-ref)}]) nil]
                                     (catch Throwable t [nil t]))]
             (if result
               new-ns
@@ -97,21 +103,33 @@
     (d/create-database defgraphname)
     defgraphname))
 
+(s/defn find-graph :- Connection
+  "Gets a graph connection from a Kiara instance. Returns nil if the graph does not exist.
+   Throws an exception if the graph is known, but cannot be found."
+  [{:keys [system default]} :- Kiara, gn :- (s/maybe UriString)]
+  (if (empty? gn)
+    default
+    (if-let [db-name (ffirst (q '[:find ?db :in $ ?gn :where [?g :k/db-name ?db] [?g :sd/name ?gn]]
+                                (rdb system) (URI. gn)))]
+      (or (d/connect (str db-name))
+          (throw (ex-info "System identified graph is missing" {:graph gn :database db-name}))))))
+
 (s/defn get-graph :- Connection
   "Gets a graph connection from a Kiara instance, creating a new one where necessary."
   [k :- Kiara, gn :- UriString]
   (let [sys (:system k)
         sysdb (rdb sys)
-        established (ffirst (q '[:find ?dn :in $ ?gn :where [?g :k/db-name ?dn][?g :k/name ?gn]] sysdb gn))
-        dbname (or established (generate-graph-uri k gn))]
+        gu (URI. gn)
+        established (ffirst (q '[:find ?dn :in $ ?gn :where [?g :k/db-name ?dn][?g :sd/name ?gn]] sysdb gu))
+        dbname (str (or established (generate-graph-uri k gn)))]
     (d/create-database dbname)
     (let [conn (d/connect dbname)]
       (when-not established
         @(d/transact conn cschema/system-partition)
         @(d/transact conn cschema/core-attributes)
         @(d/transact sys [{:db/id (Peer/tempid :k/system)
-                           :k/name gn
-                           :k/db-name dbname}]))
+                           :sd/name gu
+                           :k/db-name (URI. dbname)}]))
       conn)))
 
 (s/defn ^{:private true}
@@ -183,13 +201,11 @@
     (d/transact c (schema/datomic-schema f)))
   c)
 
-(def String? (s/maybe String))
-
 (s/defn load-schema :- Kiara
   "Infers a schema from TTL data in a file, and loads it into a Kiara instance"
   ([k :- Kiara, file :- s/Any] (load-schema k file nil))
-  ([k :- Kiara, file :- s/Any, graphname :- String?]
-   (let [graph (if graphname (get-graph k graphname) (:default k))]
+  ([k :- Kiara, file :- s/Any, graphname :- UriString?]
+     (let [graph (if (empty? graphname) (:default k) (get-graph k graphname))]
      (with-open [i (io/input-stream file)]
        (let [schema (schema/datomic-schema i)]
          @(d/transact graph schema))))
@@ -198,7 +214,7 @@
 (s/defn load-ttl :- Kiara
   "Load TTL data from a file into a Kiara instance."
   ([k :- Kiara, file :- s/Any] (load-ttl k file nil))
-  ([k :- Kiara, file :- s/Any, graphname :- String?]
+  ([k :- Kiara, file :- s/Any, graphname :- UriString?]
    (let [graph (if graphname (get-graph k graphname) (:default k))]
      (with-open [f (io/input-stream file)]
        (let [sys (:system k)
@@ -206,3 +222,18 @@
              [data parser] (data/datomic-data (rdb graph) f (known-prefixes sys) prefix-gen-fn)]
          @(d/transact graph data))))
    k))
+
+(s/defn get-triples :- [Triple]
+  "Gets all triples from a graph"
+  ([k :- Kiara] (get-triples k nil))
+  ([k :- Kiara, graph :- (s/maybe UriString)]
+     (if-let [g (find-graph k graph)]
+       (let [gv (rdb g)
+             raw (q '[:find ?sn ?p ?pn ?o
+                      :where [?p :db/ident ?pn] [?p :k/rdf true] [?s ?p ?o] [?s :db/ident ?sn]] gv)
+             obj-expand (fn [[s p pn o]]
+                          (let [pe (d/entity gv p)]
+                            (if (= :db.type/ref (:db/valueType pe))
+                              [s pn (d/entity gv o)]
+                              [s pn o])))]
+         (map obj-expand raw)))))
