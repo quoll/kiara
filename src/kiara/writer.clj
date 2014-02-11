@@ -42,6 +42,6 @@
                                  [?ns :k/prefix ?p] [?ns :k/namespace ?n]]
                                sys (URI. graph-name)))
         subjects (map first (q '[:find ?s :where [?p :k/rdf] [?s ?p]] graph))]
-    (concat (ttl-prefixes namespaces) [""]
+    (concat (ttl-prefixes namespaces) [[""]]
             (ttl-data graph subjects))))
 
