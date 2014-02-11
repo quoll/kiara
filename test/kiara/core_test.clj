@@ -1,5 +1,6 @@
 (ns kiara.core-test
   (:require [kiara.util :as ku]
+            [kiara.writer :as w]
             [schema.test])
   (:use clojure.test
         kiara.core))
@@ -47,3 +48,12 @@
                      (is (= [:a :b 1.0] (first t)))))]
       (tf)
       (tf))))
+
+(deftest write-ttl
+  (testing "Simple TTL output"
+    (let [k (create)
+          k (load-schema k (ku/stream simple-data) "my:graph")
+          k (load-ttl k (ku/stream simple-data) "my:graph")
+          s (w/write-ttl k "my:graph")]
+      #_(println s)
+      )))
