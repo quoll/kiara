@@ -20,15 +20,19 @@ determined for a namespace, a new one is generated. These prefixes are unique
 across the system. It is possible to store URIs, so this may be made an option
 in the future if it proves necessary.
 
-Currently the only output is to serialize graphs as seqs of triples through the
-API.
-
 Despite my best intentions, RDF/XML support will be required. The goal is to
 support this natively, *without* resorting to Jena's parser.
 
 ## Usage
 
 API usage only for the moment. See the test class for examples.
+
+## TODO
+
+* Flesh out tests for various RDF structures and large loads.
+* Provide a BGP resolution interface (for SPARQL engines).
+* Write an RDF/XML parser.
+* Create CLI tools.
 
 ## Name
 
