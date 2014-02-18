@@ -25,13 +25,14 @@ support this natively, *without* resorting to Jena's parser.
 
 ## Usage
 
-API usage only for the moment. See the test class for examples.
+API usage only for the moment. See the test namespace for examples.
 
 ## TODO
 
 * Flesh out tests for various RDF structures and large loads.
-* Provide a BGP resolution interface (for SPARQL engines).
 * Write an RDF/XML parser.
+* Implement a rules engine, with flow control based on core.async.
+* Provide a BGP resolution interface (for SPARQL engines).
 * Create CLI tools.
 
 ## Name
