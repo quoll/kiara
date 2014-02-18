@@ -28,20 +28,25 @@
     (map (fn [s]
            (let [subj (d/entity graph s)]
              (str (:db/ident subj) " "
-                  (ttl-properties subj (filter props (keys subj))) ".")))
+                  (ttl-properties subj (filter props (keys subj))) " .")))
          subjects)))
 
-(s/defn write-ttl :- [String]
-  "Writes a graph as Turtle"
-  [{system :system :as k} :- Kiara, graph-name :- UriString?]
-  (let [sys (k/rdb system)
-        graph (k/get-graph k graph-name)
-        namespaces (into {} (q '[:find ?p ?n
-                                 :in $ ?gn
-                                 :where [?g :sd/name ?gn] [?g :k/namespaces ?ns]
-                                 [?ns :k/prefix ?p] [?ns :k/namespace ?n]]
-                               sys (URI. graph-name)))
-        subjects (map first (q '[:find ?s :where [?p :k/rdf] [?s ?p]] graph))]
-    (concat (ttl-prefixes namespaces) [[""]]
-            (ttl-data graph subjects))))
+(s/defn write-ttl :- [(s/one [String] "prefixes") (s/one [String] "triples")]
+  "Writes a graph as Turtle. Returns a seq of prefix declarations,
+  followed by a seq of triple expressions."
+  ([k :- Kiara] (write-ttl k nil))
+  ([{system :system :as k} :- Kiara, graph-name :- UriString?]
+     (let [sys (k/rdb system)
+           graph (k/get-graph k graph-name)
+           pn (if (empty? graph-name)
+                (q '[:find ?p ?n :where [?s :k/default ?g] [?g :k/namespaces ?ns]
+                     [?ns :k/prefix ?p] [?ns :k/namespace ?n]]
+                   sys)
+                (q '[:find ?p ?n :in $ ?gn
+                     :where [?g :sd/name ?gn] [?g :k/namespaces ?ns]
+                     [?ns :k/prefix ?p] [?ns :k/namespace ?n]]
+                   sys (URI. graph-name)))
+           namespaces (into {} pn)
+           subjects (map first (q '[:find ?s :where [?p :k/rdf] [?s ?p]] graph))]
+       [(ttl-prefixes namespaces) (ttl-data graph subjects)])))
 

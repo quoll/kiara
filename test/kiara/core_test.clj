@@ -49,11 +49,22 @@
       (tf)
       (tf))))
 
+(deftest write-ttl-default
+  (testing "Simple TTL output from default"
+    (let [k (create)
+          k (load-schema k (ku/stream simple-data))
+          k (load-ttl k (ku/stream simple-data))
+          [prefixes triples :as s] (w/write-ttl k)]
+      (is (= 2 (count s)))
+      (is (= "@prefix : <http://example.org#> ." (first prefixes)))
+      (is (= ":a :b 1.0 ." (first triples))))))
+
 (deftest write-ttl
   (testing "Simple TTL output"
     (let [k (create)
           k (load-schema k (ku/stream simple-data) "my:graph")
           k (load-ttl k (ku/stream simple-data) "my:graph")
-          s (w/write-ttl k "my:graph")]
-      #_(println s)
-      )))
+          [prefixes triples :as s] (w/write-ttl k "my:graph")]
+      (is (= 2 (count s)))
+      (is (= "@prefix : <http://example.org#> ." (first prefixes)))
+      (is (= ":a :b 1.0 ." (first triples))))))
