@@ -89,11 +89,22 @@
   A database is required to read the schema.
   Returns the data stream and the parser. The parser is needed, since it will not
   contain the prefix map until the data stream has been processed."
-  [database i known-ns gen-fn]
-  (let [parser (p/create-parser i known-ns gen-fn)
+  [database i known-ns]
+  (let [parser (p/create-parser i known-ns)
         triples (p/get-triples parser)
         add-entity (fn [[s m] triple]
                      (let [[entities new-map] (triple-to-entity database m triple)]
                        [(concat s entities) new-map]))]
     [(first (reduce add-entity [[] {}] triples)) parser]))
+
+(defn namespace-data
+  "Creates a transaction data for a namespace, based on what a parser returns"
+  [^crg.turtle.parser.TParser parser ^Long graph-eid]
+  (let [prefix-map (p/get-prefix-map parser)
+        ns-entities (map (fn [[p n]] {:db/id (Peer/tempid :k/system)
+                                     :k/prefix p
+                                     :k/namespace (URI. n)})
+                         prefix-map)]
+    [{:db/id graph-eid
+      :k/namespaces ns-entities}]))
 

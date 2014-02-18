@@ -18,6 +18,8 @@
 
 (def kiara-ns "http://raw.github.com/quoll/kiara/master/ns#")
 
+(def default-default-name "default")
+
 (s/defn rdb :- Db
   "Gets the current db value on a connection. This may be expanded for reliability."
   [connection :- Connection]
@@ -56,7 +58,7 @@
   "Retrieves a graph entity ID for a given graph name"
   [sysdb :- Db, graph-name :- UriString?]
   (if (empty? graph-name)
-    (ffirst (q '[:find ?gid :where [?gid :rdf/type :k/system-graph]] sysdb))
+    (ffirst (q '[:find ?gid :where [?sys :rdf/type :k/system-graph] [?sys :k/default ?gid]] sysdb))
     (ffirst (q '[:find ?gid :in $ ?gn :where [?gid :sd/name ?gn]] sysdb (URI. graph-name)))))
 
 (s/defn create-prefix :- String
@@ -94,10 +96,9 @@
 
 (s/defn known-prefixes :- {String UriString}
   "Returns a map of known prefixes to namespace references."
-  [sysdb :- Db, graph-name :- UriString?]
-  (let [gn (graph-eid-by-name sysdb graph-name)
-        p (q '[:find ?p ?l :in $ ?g :where [?g :k/namespaces ?n] [?n :k/prefix ?p] [?n :k/namespace ?l]]
-             sysdb gn)]
+  [sysdb :- Db, graph-eid :- Long]
+  (let [p (q '[:find ?p ?l :in $ ?g :where [?g :k/namespaces ?n] [?n :k/prefix ?p] [?n :k/namespace ?l]]
+             sysdb graph-eid)]
     (reduce conj {} (map (fn [[p n]] [p (str n)]) p))))
 
 (s/defn generate-graph-uri :- DatomicUrlString
@@ -111,13 +112,13 @@
 (s/defn get-default :- DatomicUrlString
   "Gets the default graph given the system graph, or a default reference.
    Only uses the default if the system graph has not yet been established."
-  [system :- Connection, dn :- DatomicUrlString]
-  (let [sysdb (rdb system)
-        est (try (str (ffirst (q '[:find ?dn :where [?dg :k/db-name ?dn][?sys :k/default ?dg]] sysdb)))
-                 (catch Exception _))
-        defgraphname (or est dn)]
-    (d/create-database defgraphname)
-    defgraphname))
+  ([sysdb :- Db] (get-default sysdb default-default-name))
+  ([sysdb :- Db, dn :- DatomicUrlString]
+     (let [est (try (str (ffirst (q '[:find ?dn :where [?dg :k/db-name ?dn][?sys :k/default ?dg]] sysdb)))
+                    (catch Exception _))
+           defgraphname (if-not (empty? est) est dn)]
+       (d/create-database defgraphname)
+       defgraphname)))
 
 (s/defn find-graph-connection :- Connection
   "Gets a graph connection from a Kiara instance. Returns nil if the graph does not exist.
@@ -167,13 +168,11 @@
     :rdf/type [:sd/NamedGraph :k/system-graph]
     :sd/name (URI. sys-name)
     :k/db-name (URI. sys-db)
-    :k/namespaces [{:k/prefix "k" :k/namespace (URI. kiara-ns)}]
+    :k/namespaces [{:db/id (Peer/tempid :k/system), :k/prefix "k", :k/namespace (URI. kiara-ns)}]
     :k/default {:db/id (Peer/tempid :k/system)
                 :rdf/type :sd/NamedGraph
                 :sd/name (URI. default-name)
                 :k/db-name (URI. default-db)}}])
-
-(def default-default-name "default")
 
 (s/defn gname :- String
   "Gets the end of the path from a URL"
@@ -197,12 +196,12 @@
          @(d/transact def-graph cschema/system-partition)
          @(d/transact def-graph cschema/core-attributes)
          @(d/transact system-graph (initial-system sys-db sys-name default-db default-name)))
-         (let [def-db (if created default-db (get-default system-graph default-db))
-               k {:system system-graph
-                  :system-db sys-db
-                  :default def-graph
-                  :default-db def-db}]
-           k))))
+       (let [def-db (if created default-db (get-default (rdb system-graph) default-db))
+             k {:system system-graph
+                :system-db sys-db
+                :default def-graph
+                :default-db def-db}]
+         k))))
 
 (def default-protocol "datomic:free")
 (def default-host "localhost")
@@ -230,22 +229,25 @@
   ([k :- Kiara, file :- s/Any] (load-schema k file nil))
   ([k :- Kiara, file :- s/Any, graphname :- UriString?]
      (let [graph (if (empty? graphname) (:default k) (graph-connection k graphname))]
-     (with-open [i (io/input-stream file)]
-       (let [schema (schema/datomic-schema i)]
-         @(d/transact graph schema))))
-   k))
+       (with-open [i (io/input-stream file)]
+         (let [schema (schema/datomic-schema i)]
+           @(d/transact graph schema))))
+     k))
 
 (s/defn load-ttl :- Kiara
   "Load TTL data from a file into a Kiara instance."
   ([k :- Kiara, file :- s/Any] (load-ttl k file nil))
   ([k :- Kiara, file :- s/Any, graphname :- UriString?]
-     (let [graph (if graphname (graph-connection k graphname) (:default k))
-           graph-value (rdb graph)]
+     (let [sys (:system k)
+           sysdb (rdb sys)
+           graph (if graphname (graph-connection k graphname) (:default k))
+           graph-value (rdb graph)
+           graph-eid (graph-eid-by-name sysdb graphname)]
      (with-open [f (io/input-stream file)]
-       (let [sys (:system k)
-             prefix-gen-fn (fn [_ namesp-ref] (get-prefix sys graphname namesp-ref))
-             [data parser] (data/datomic-data graph-value f (known-prefixes (rdb sys) graphname) prefix-gen-fn)]
-         @(d/transact graph data))))
+       ;; NOTE: Parser is stateful!!!
+       (let [[data parser] (data/datomic-data graph-value f (known-prefixes sysdb graph-eid))]
+         @(d/transact graph data)  ;; NOTE: Parser state is set after data has been read
+         @(d/transact sys (data/namespace-data parser graph-eid)))))
    k))
 
 (s/defn get-triples :- [Triple]
