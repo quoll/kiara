@@ -82,7 +82,7 @@
    {:db/id (Peer/tempid :db.part/db)
     :db/ident :k/namespaces
     :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/one
+    :db/cardinality :db.cardinality/many
     :db/doc "Refers to the namespaces for a graph."
     :db.install/_attribute :db.part/db}
    {:db/id (Peer/tempid :db.part/db)
