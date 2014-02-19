@@ -1,0 +1,33 @@
+@base <http://ex.com/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix ex: <http://example.org/stuff/1.0/> .
+
+<http://www.w3.org/TR/rdf-syntax-grammar>
+  dc:title "RDF/XML Syntax Specification (Revised)" ;
+  ex:editor [
+    ex:fullname "Dave Beckett";
+    ex:homePage <http://purl.org/net/dajobe/>;
+    ex: dc:
+  ] .
+
+<http://example.org/stuff/1.0/instance1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/AClass> .
+
+ex:collection :hasCollection ( :a :b :c ) .
+[ a ex:Foo ; ex:some ex:data ] ex:friend [ a ex:Bar ; ex:contains ( "some" "data"@en ) ] .
+( :a :b "foo" [ a ex:Type , ex:Other ] ( :aa ) ) ex:to ( [ :val 1 ] [ :val 2] [ :val 3] ) .
+
+<http://unknown.org/namespace/data> a <http://unknown.org/namespace/Type> .
+
+[ a ex:Foo ;;; ex:some ex:data ] ex:friend [ a ex:Bar ;; ex:contains ( "some" "data" ) ] .
+ex:collection2 :hasCollection ( :a :b :c ) ; .
+ex:collection3 :hasCollection ( :a :b :c ) ;;; .
+
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:numbers :hasCollection ( 1 2.0 3.0E0 ) .
+ex:data :hasCollection () .
+() :hasData 1 .
+() :hasCollection () .
+( 1.0 ) :hasCollection ( 2 ) .
+<uri:1> <uri:2> <foo/bar> .
