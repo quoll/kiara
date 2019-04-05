@@ -14,7 +14,7 @@
     (println "Usage: kiara.test-load <ttl.file>")
     (System/exit 1))
   (let [data (-> (kiara/init)
-                 (kiara/infer-schema (first args))
+                 (kiara/infer-schema-to-conn (first args))
                  (kiara/load-ttl (first args))
                  d/db)]
     (pr (q '[:find ?subj ?pred ?o :where [?s ?p ?o][?s :db/ident ?subj][?p :db/ident ?pred]] data))
